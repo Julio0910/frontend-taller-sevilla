@@ -65,15 +65,18 @@ export default function InternalSalesScreen() {
 
     try {
       const datosVenta = {
-        customerName: nombreCliente || 'Cliente General',
-        notes: notas,
+        invoiceNumber: `INT-${Date.now()}`, // Le ponemos "INT" para saber que es Interna
         subtotal: granTotal,
-        isv: 0, // <-- AQUÍ ESTÁ LA MAGIA: 0 IMPUESTOS
-        total: granTotal,
+        taxAmount: 0, // <-- AQUÍ ESTÁ LA MAGIA: 0 IMPUESTOS
+        totalAmount: granTotal,
+        laborPrice: 0,
+        surcharge: 0,
+        paymentMethod: 'Efectivo', // <-- ¡EL DATO QUE FALTABA PARA QUE PRISMA NO EXPLOTE!
         items: carrito.map(item => ({
           productId: item.id,
           quantity: item.cantidad,
-          unitPrice: item.salePrice
+          unitPrice: item.salePrice,
+          subtotal: item.salePrice * item.cantidad
         }))
       };
 
