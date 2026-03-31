@@ -1,0 +1,32 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f1f5f9;
+}
+
+/* --- REGLAS DE IMPRESIÓN PARA LA CANON A4 --- */
+@media print {
+  body {
+    background-color: #fff;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .no-print-padding {
+    padding: 0 !important;
+  }
+
+  /* Esta regla le dice a la impresora que no invente márgenes extra */
+  @page {
+    size: A4 portrait;
+    margin: 10mm; 
+  }
+}
