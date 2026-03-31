@@ -18,6 +18,8 @@ import RestockScreen from './pages/RestockScreen';
 import LoginScreen from './pages/LoginScreen';
 import ClientsScreen from './pages/ClientsScreen'; // <-- Nueva pantalla de Clientes
 import WorkersScreen from './pages/WorkersScreen';
+import InternalSalesScreen from './pages/InternalSalesScreen';
+
 function App() {
   const [estaLogueado, setEstaLogueado] = useState(false);
 
@@ -79,7 +81,11 @@ function App() {
             <Button color="inherit" component={Link} to="/trabajadores" startIcon={<EngineeringIcon />} sx={{ mr: 2, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', '&:hover': { color: '#fb923c' } }}>
               Trabajadores
             </Button>
-
+            
+            <Button color="inherit" component={Link} to="/registro-interno" startIcon={<EngineeringIcon />} sx={{ mr: 2, fontWeight: 'bold', fontSize: '0.85rem', color: '#fff', '&:hover': { color: '#fb923c' } }}>
+              Registro Interno
+            </Button>
+            
             <Tooltip title="Cerrar Sesión y Bloquear Sistema">
               <IconButton color="error" onClick={cerrarSesion} sx={{ backgroundColor: '#fff', '&:hover': { backgroundColor: '#fef08a' } }}>
                 <LogoutIcon />
@@ -98,6 +104,7 @@ function App() {
           <Route path="/ingreso" element={<RestockScreen />} />
           <Route path="/clientes" element={<ClientsScreen />} /> {/* <-- Nueva Ruta */}
           <Route path="/trabajadores" element={<WorkersScreen />} /> {/* <-- Nueva Ruta */}
+          <Route path="/registro-interno" element={<InternalSalesScreen />} /> {/* <-- Nueva Ruta */} 
         </Routes>
       </Box>
     </BrowserRouter>
