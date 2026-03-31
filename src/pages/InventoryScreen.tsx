@@ -29,9 +29,23 @@ export default function InventoryScreen() {
   const abrirModalParaEditar = (producto: any) => { setIdEdicion(producto.id); setNuevoProducto({ ...producto, barcode: producto.barcode || '' }); setModalAbierto(true); };
   const cerrarModal = () => { setModalAbierto(false); setNuevoProducto(productoInicial); setIdEdicion(null); };
 
-  const guardarProducto = async () => {
+const guardarProducto = async () => {
     try {
-      const datosAEnviar = { ...nuevoProducto, costPrice: Number(nuevoProducto.costPrice), salePrice: Number(nuevoProducto.salePrice), stock: Number(nuevoProducto.stock), minStock: Number(nuevoProducto.minStock) };
+      const datosAEnviar: any = {
+       ...nuevoProducto,
+        costPrice: Number(nuevoProducto.costPrice),
+        salePrice: Number(nuevoProducto.salePrice),
+        stock: Number(nuevoProducto.stock),
+        minStock: Number(nuevoProducto.minStock)
+      };
+
+      // --- LIMPIEZA DE DATOS PARA QUE PRISMA NO EXPLOTE ---
+      delete datosAEnviar.id;
+      delete datosAEnviar.createdAt;
+      delete datosAEnviar.updatedAt;
+      delete datosAEnviar.category;
+      // ---------------------------------------------------
+
       if (idEdicion) { 
         // --- ACTUALIZADO A LA NUBE ---
         await axios.patch(`${import.meta.env.VITE_API_URL}/products/${idEdicion}`, datosAEnviar); 
