@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-import Swal from 'sweetalert2'; // <-- La magia visual
+import Swal from 'sweetalert2';
 import { Box, Paper, Typography, Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PrintIcon from '@mui/icons-material/Print';
@@ -23,15 +23,12 @@ export default function SalesHistoryScreen() {
 
   const cargarDatos = async () => { 
     try {
-      // --- ACTUALIZADO A LA NUBE ---
       const resFacturas = await axios.get(`${import.meta.env.VITE_API_URL}/invoices`);
       setFacturas(resFacturas.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       
-      // --- ACTUALIZADO A LA NUBE ---
       const resTrabajos = await axios.get(`${import.meta.env.VITE_API_URL}/workers/jobs`);
       const trabajosExternos = resTrabajos.data.filter((job: any) => job.isOutside === true);
       setTrabajosAfuera(trabajosExternos);
-
     } catch (error) {
       console.error(error);
       Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudieron cargar los datos del reporte.' });
@@ -42,7 +39,6 @@ export default function SalesHistoryScreen() {
 
   const verDetalleFactura = async (id: number) => { 
     try { 
-      // --- ACTUALIZADO A LA NUBE ---
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/invoices/${id}`); 
       setFacturaSeleccionada(response.data); 
     } catch (error) { 
@@ -54,6 +50,7 @@ export default function SalesHistoryScreen() {
     try {
       const datosParaExcel = facturas.map((fac) => ({
         "N° Factura": fac.invoiceNumber,
+        "Tipo": fac.taxAmount > 0 ? "Factura Oficial" : "Registro Interno",
         "Fecha": new Date(fac.createdAt).toLocaleDateString(),
         "Hora": new Date(fac.createdAt).toLocaleTimeString(),
         "Cliente": fac.client?.name || 'Consumidor Final',
@@ -70,19 +67,15 @@ export default function SalesHistoryScreen() {
       XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Ventas");
       XLSX.writeFile(libroDeTrabajo, "Reporte_Ventas_Taller_Sevilla.xlsx");
       
-      // Alerta de éxito al exportar
       Swal.fire({ icon: 'success', title: '¡Excel Descargado!', text: 'El reporte se generó correctamente.', timer: 2000, showConfirmButton: false });
     } catch (error) {
       Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el archivo Excel.' });
     }
   };
 
-  // --- CÁLCULOS DEL CIERRE DE CAJA DIARIO ---
   const hoy = new Date().toLocaleDateString();
-  
   const facturasDeHoy = facturas.filter(fac => new Date(fac.createdAt).toLocaleDateString() === hoy);
   const trabajosAfueraHoy = trabajosAfuera.filter(job => new Date(job.createdAt).toLocaleDateString() === hoy);
-  
   const totalIngresosAfuera = trabajosAfueraHoy.reduce((suma, job) => suma + job.jobValue, 0);
 
   const totalHoy = facturasDeHoy.reduce((suma, fac) => suma + fac.totalAmount, 0) + totalIngresosAfuera;
@@ -99,7 +92,6 @@ export default function SalesHistoryScreen() {
   return (
     <Box sx={{ p: 4, backgroundColor: '#f1f5f9', height: '100vh', overflowY: 'auto', '@media print': { height: 'auto', overflow: 'visible', p: 0 } }}>
       
-      {/* CABECERA CON BOTONES */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }} className="no-print">
         <Typography variant="h4" fontWeight="900" color="#0f172a">📊 Reportes y Cierre de Caja</Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -112,18 +104,17 @@ export default function SalesHistoryScreen() {
         </Box>
       </Box>
 
-      {/* DASHBOARD */}
       <Grid container spacing={3} sx={{ mb: 4 }} className="no-print">
         <Grid item xs={12} md={4}><Paper elevation={4} sx={{ p: 3, borderRadius: 3, borderLeft: '7px solid #16a34a' }}><Grid container alignItems="center"><Grid item><AccountBalanceWalletIcon sx={{ fontSize: 50, color: '#16a34a', mr: 2 }} /></Grid><Grid item><Typography variant="subtitle2" color="text.secondary">Dinero en Caja (Hoy)</Typography><Typography variant="h4" fontWeight="900">Lps. {totalHoy.toFixed(2)}</Typography></Grid></Grid></Paper></Grid>
         <Grid item xs={12} md={4}><Paper elevation={4} sx={{ p: 3, borderRadius: 3, borderLeft: '7px solid #1e3a8a' }}><Grid container alignItems="center"><Grid item><AccountBalanceWalletIcon sx={{ fontSize: 50, color: '#1e3a8a', mr: 2 }} /></Grid><Grid item><Typography variant="subtitle2" color="text.secondary">Total Ingresos (Siempre)</Typography><Typography variant="h4" fontWeight="900">Lps. {totalHistorico.toFixed(2)}</Typography></Grid></Grid></Paper></Grid>
       </Grid>
 
-      {/* TABLA PRINCIPAL DE FACTURAS */}
       <Typography variant="h6" fontWeight="bold" color="#0f172a" sx={{ mb: 2 }} className="no-print">Registro de Facturas Emitidas</Typography>
       <TableContainer component={Paper} elevation={4} sx={{ borderRadius: 3, overflowY: 'auto' }} className="no-print">
         <Table stickyHeader size="small">
           <TableHead sx={{ backgroundColor: '#e2e8f0' }}><TableRow>
-            <TableCell sx={{ fontWeight: 'bold' }}>N° FACTURA</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>N° FACTURA / REGISTRO</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>TIPO</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>FECHA</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>CLIENTE</TableCell>
             <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>TOTAL</TableCell>
@@ -132,6 +123,11 @@ export default function SalesHistoryScreen() {
           <TableBody>{facturas.map((fac) => (
             <TableRow key={fac.id} hover>
               <TableCell sx={{ fontWeight: 'bold' }}>{fac.invoiceNumber}</TableCell>
+              <TableCell>
+                <Typography variant="caption" sx={{ backgroundColor: fac.taxAmount > 0 ? '#dbeafe' : '#f1f5f9', color: fac.taxAmount > 0 ? '#1e3a8a' : '#475569', p: 0.5, borderRadius: 1, fontWeight: 'bold' }}>
+                  {fac.taxAmount > 0 ? 'Factura SAR' : 'Reg. Interno'}
+                </Typography>
+              </TableCell>
               <TableCell>{new Date(fac.createdAt).toLocaleDateString()} {new Date(fac.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</TableCell>
               <TableCell>{fac.client?.name || 'Consumidor Final'}</TableCell>
               <TableCell align="right" sx={{ fontWeight: '900', color: '#16a34a', fontSize: '1.1rem' }}>Lps. {fac.totalAmount.toFixed(2)}</TableCell>
@@ -141,9 +137,9 @@ export default function SalesHistoryScreen() {
         </Table>
       </TableContainer>
 
-      {/* --- MODAL 1: REIMPRESIÓN COPIA FIEL SAR --- */}
+      {/* --- MODAL 1: REIMPRESIÓN VISTA PREVIA --- */}
       <Dialog open={facturaSeleccionada !== null} onClose={() => setFacturaSeleccionada(null)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#1e3a8a', color: '#fff' }} className="no-print">Vista Previa SAR</DialogTitle>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#1e3a8a', color: '#fff' }} className="no-print">Vista Previa del Documento</DialogTitle>
         <DialogContent sx={{ p: 0, backgroundColor: '#e2e8f0' }}>
           {facturaSeleccionada && (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }} className="no-print-padding">
@@ -159,25 +155,32 @@ export default function SalesHistoryScreen() {
                   <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>RTN: {sarRTN}</Typography>
                 </Box>
                 <Divider sx={{ borderBottomWidth: 2, borderColor: '#000', mb: 2 }} />
+                
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid item xs={7}>
-                    <Typography variant="body2"><strong>CAI:</strong> {sarCAI}</Typography>
-                    <Typography variant="body2"><strong>Rango Autorizado:</strong> {sarRango}</Typography>
-                    <Typography variant="body2"><strong>Fecha Límite Emisión:</strong> {sarFechaLimite}</Typography>
-                    <Box sx={{ mt: 2 }}>
+                    {/* LOGICA INTELIGENTE: Si tiene impuesto (SAR), muestra CAI. Si es 0 (Interna), oculta esto. */}
+                    {facturaSeleccionada.taxAmount > 0 && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2"><strong>CAI:</strong> {sarCAI}</Typography>
+                        <Typography variant="body2"><strong>Rango Autorizado:</strong> {sarRango}</Typography>
+                        <Typography variant="body2"><strong>Fecha Límite Emisión:</strong> {sarFechaLimite}</Typography>
+                      </Box>
+                    )}
+                    <Box sx={{ mt: facturaSeleccionada.taxAmount > 0 ? 0 : 2 }}>
                       <Typography variant="body2"><strong>Cliente:</strong> {facturaSeleccionada.client?.name || 'Consumidor Final'}</Typography>
                       <Typography variant="body2"><strong>RTN:</strong> {facturaSeleccionada.client?.rtn || 'Consumidor Final'}</Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={5} sx={{ textAlign: 'right' }}>
-                    <Box sx={{ border: '2px solid #000', p: 1, borderRadius: 1, display: 'inline-block', textAlign: 'center', minWidth: '200px' }}>
-                      <Typography variant="subtitle1" fontWeight="bold">COPIA DE FACTURA</Typography>
+                    <Box sx={{ border: '2px solid #000', p: 1, borderRadius: 1, display: 'inline-block', textAlign: 'center', minWidth: '200px', backgroundColor: facturaSeleccionada.taxAmount === 0 ? '#f8fafc' : 'transparent' }}>
+                      <Typography variant="subtitle1" fontWeight="bold">{facturaSeleccionada.taxAmount > 0 ? 'COPIA DE FACTURA' : 'REGISTRO INTERNO'}</Typography>
                       <Typography variant="body1" fontWeight="bold">N° {facturaSeleccionada.invoiceNumber}</Typography>
                     </Box>
                     <Typography variant="body2" sx={{ mt: 2 }}><strong>Fecha:</strong> {new Date(facturaSeleccionada.createdAt).toLocaleDateString('es-HN')}</Typography>
                     <Typography variant="body2"><strong>Condición de Pago:</strong> Contado ({facturaSeleccionada.paymentMethod})</Typography>
                   </Grid>
                 </Grid>
+
                 <Table size="small" sx={{ mb: 2, border: '1px solid #000' }}>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f0f0f0', '& th': { border: '1px solid #000', fontWeight: 'bold', fontSize: '0.8rem', py: 0.5 } }}>
@@ -217,6 +220,7 @@ export default function SalesHistoryScreen() {
                     )}
                   </TableBody>
                 </Table>
+                
                 <Grid container>
                   <Grid item xs={7}>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontSize: '0.75rem' }}>* La firma del cliente acepta el trabajo realizado y los repuestos detallados.</Typography>
@@ -225,14 +229,22 @@ export default function SalesHistoryScreen() {
                   <Grid item xs={5}>
                     <Table size="small" sx={{ border: '1px solid #000' }}>
                       <TableBody sx={{ '& td': { border: '1px solid #000', py: 0.5, fontSize: '0.85rem' } }}>
-                        <TableRow><TableCell>Importe Exento:</TableCell><TableCell align="right">Lps. {((facturaSeleccionada.laborPrice || 0) + (facturaSeleccionada.surcharge || 0)).toFixed(2)}</TableCell></TableRow>
-                        <TableRow><TableCell>Importe Gravado 15%:</TableCell><TableCell align="right">Lps. {facturaSeleccionada.subtotal.toFixed(2)}</TableCell></TableRow>
-                        <TableRow><TableCell>15% I.S.V.:</TableCell><TableCell align="right">Lps. {facturaSeleccionada.taxAmount.toFixed(2)}</TableCell></TableRow>
-                        <TableRow><TableCell sx={{ fontWeight: 'bold' }}>TOTAL PAGADO:</TableCell><TableCell align="right" sx={{ fontWeight: 'bold' }}>Lps. {facturaSeleccionada.totalAmount.toFixed(2)}</TableCell></TableRow>
+                        {/* LÓGICA INTELIGENTE EN TOTALES */}
+                        {facturaSeleccionada.taxAmount > 0 ? (
+                          <>
+                            <TableRow><TableCell>Importe Exento:</TableCell><TableCell align="right">Lps. {((facturaSeleccionada.laborPrice || 0) + (facturaSeleccionada.surcharge || 0)).toFixed(2)}</TableCell></TableRow>
+                            <TableRow><TableCell>Importe Gravado 15%:</TableCell><TableCell align="right">Lps. {facturaSeleccionada.subtotal.toFixed(2)}</TableCell></TableRow>
+                            <TableRow><TableCell>15% I.S.V.:</TableCell><TableCell align="right">Lps. {facturaSeleccionada.taxAmount.toFixed(2)}</TableCell></TableRow>
+                          </>
+                        ) : (
+                          <TableRow><TableCell>Subtotal:</TableCell><TableCell align="right">Lps. {facturaSeleccionada.subtotal.toFixed(2)}</TableCell></TableRow>
+                        )}
+                        <TableRow><TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>TOTAL PAGADO:</TableCell><TableCell align="right" sx={{ fontWeight: 'bold', backgroundColor: '#f0f0f0' }}>Lps. {facturaSeleccionada.totalAmount.toFixed(2)}</TableCell></TableRow>
                       </TableBody>
                     </Table>
                   </Grid>
                 </Grid>
+
                 <Box sx={{ mt: 4 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                     <Typography variant="caption" fontWeight="bold">ORIGINAL: Cliente / COPIA: Obligado Tributario</Typography>
@@ -242,7 +254,7 @@ export default function SalesHistoryScreen() {
                     </Box>
                   </Box>
                   <Box sx={{ mt: 3, textAlign: 'center' }}>
-                    <Typography variant="caption" color="text.secondary" display="block">--- ESTA ES UNA COPIA FIEL DE LA FACTURA ORIGINAL ---</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">--- ESTA ES UNA COPIA FIEL DEL DOCUMENTO ORIGINAL ---</Typography>
                     <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 'bold' }}>¡Gracias por confiar su vehículo en Taller Sevilla!</Typography>
                   </Box>
                 </Box>
@@ -269,7 +281,7 @@ export default function SalesHistoryScreen() {
                   <Typography variant="h5" fontWeight="900">INVERSIONES SEVILLA</Typography>
                   <Typography variant="body1" fontWeight="bold">REPORTE DE CIERRE DE CAJA DIARIO</Typography>
                   <Typography variant="body2">Fecha de Cierre: {hoy}</Typography>
-                  <Typography variant="body2">Facturas Emitidas Hoy: {facturasDeHoy.length}</Typography>
+                  <Typography variant="body2">Operaciones Registradas Hoy: {facturasDeHoy.length}</Typography>
                   <Typography variant="body2">Trabajos de Mecánicos Afuera: {trabajosAfueraHoy.length}</Typography>
                 </Box>
 
