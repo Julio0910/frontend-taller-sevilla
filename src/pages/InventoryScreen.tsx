@@ -34,7 +34,7 @@ export default function InventoryScreen() {
       const datosAEnviar = { ...nuevoProducto, costPrice: Number(nuevoProducto.costPrice), salePrice: Number(nuevoProducto.salePrice), stock: Number(nuevoProducto.stock), minStock: Number(nuevoProducto.minStock) };
       if (idEdicion) { 
         // --- ACTUALIZADO A LA NUBE ---
-        await axios.put(`${import.meta.env.VITE_API_URL}/products/${idEdicion}`, datosAEnviar); 
+        await axios.patch(`${import.meta.env.VITE_API_URL}/products/${idEdicion}`, datosAEnviar); 
       } 
       else { 
         // --- ACTUALIZADO A LA NUBE ---
